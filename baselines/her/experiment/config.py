@@ -72,7 +72,7 @@ def cached_make_env(make_env):
 
 def prepare_params(kwargs):
     # DDPG params
-    ddpg_params = dict()
+    ddpg_params = {}
     env_name = kwargs['env_name']
 
     def make_env(subrank=None):
@@ -87,9 +87,11 @@ def prepare_params(kwargs):
                 logger.warn('Running with a single MPI process. This should work, but the results may differ from the ones publshed in Plappert et al.')
 
             max_episode_steps = env._max_episode_steps
-            env =  Monitor(env,
-                           os.path.join(logger.get_dir(), str(mpi_rank) + '.' + str(subrank)),
-                           allow_early_resets=True)
+            env = Monitor(
+                env,
+                os.path.join(logger.get_dir(), f'{mpi_rank}.{str(subrank)}'),
+                allow_early_resets=True,
+            )
             # hack to re-expose _max_episode_steps (ideally should replace reliance on it downstream)
             env = gym.wrappers.TimeLimit(env, max_episode_steps=max_episode_steps)
         return env
@@ -112,7 +114,7 @@ def prepare_params(kwargs):
                  'norm_eps', 'norm_clip', 'max_u',
                  'action_l2', 'clip_obs', 'scope', 'relative_goals']:
         ddpg_params[name] = kwargs[name]
-        kwargs['_' + name] = kwargs[name]
+        kwargs[f'_{name}'] = kwargs[name]
         del kwargs[name]
     kwargs['ddpg_params'] = ddpg_params
 
@@ -121,7 +123,7 @@ def prepare_params(kwargs):
 
 def log_params(params, logger=logger):
     for key in sorted(params.keys()):
-        logger.info('{}: {}'.format(key, params[key]))
+        logger.info(f'{key}: {params[key]}')
 
 
 def configure_her(params):
@@ -137,7 +139,7 @@ def configure_her(params):
     }
     for name in ['replay_strategy', 'replay_k']:
         her_params[name] = params[name]
-        params['_' + name] = her_params[name]
+        params[f'_{name}'] = her_params[name]
         del params[name]
     sample_her_transitions = make_sample_her_transitions(**her_params)
 
@@ -179,8 +181,7 @@ def configure_ddpg(dims, params, reuse=False, use_mpi=True, clip_return=True):
     ddpg_params['info'] = {
         'env_name': params['env_name'],
     }
-    policy = DDPG(reuse=reuse, **ddpg_params, use_mpi=use_mpi)
-    return policy
+    return DDPG(reuse=reuse, **ddpg_params, use_mpi=use_mpi)
 
 
 def configure_dims(params):
@@ -197,5 +198,5 @@ def configure_dims(params):
         value = np.array(value)
         if value.ndim == 0:
             value = value.reshape(1)
-        dims['info_{}'.format(key)] = value.shape[0]
+        dims[f'info_{key}'] = value.shape[0]
     return dims

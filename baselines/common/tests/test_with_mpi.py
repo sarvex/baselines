@@ -31,8 +31,7 @@ def with_mpi(nproc=2, timeout=30, skip_if_no_mpi=True):
     return outer_thunk
 
 
-if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        fn = cloudpickle.loads(base64.b64decode(sys.argv[1]))
-        assert callable(fn)
-        fn()
+if __name__ == '__main__' and len(sys.argv) > 1:
+    fn = cloudpickle.loads(base64.b64decode(sys.argv[1]))
+    assert callable(fn)
+    fn()

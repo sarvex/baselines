@@ -34,9 +34,7 @@ class RingBuffer(object):
 
 def array_min2d(x):
     x = np.array(x)
-    if x.ndim >= 2:
-        return x
-    return x.reshape(-1, 1)
+    return x if x.ndim >= 2 else x.reshape(-1, 1)
 
 
 class Memory(object):
@@ -59,14 +57,13 @@ class Memory(object):
         reward_batch = self.rewards.get_batch(batch_idxs)
         terminal1_batch = self.terminals1.get_batch(batch_idxs)
 
-        result = {
+        return {
             'obs0': array_min2d(obs0_batch),
             'obs1': array_min2d(obs1_batch),
             'rewards': array_min2d(reward_batch),
             'actions': array_min2d(action_batch),
             'terminals1': array_min2d(terminal1_batch),
         }
-        return result
 
     def append(self, obs0, action, reward, obs1, terminal1, training=True):
         if not training:

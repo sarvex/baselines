@@ -25,10 +25,7 @@ class FixedSequenceEnv(Env):
     def step(self, actions):
         rew = self._get_reward(actions)
         self._choose_next_state()
-        done = False
-        if self.episode_len and self.time >= self.episode_len:
-            done = True
-
+        done = bool(self.episode_len and self.time >= self.episode_len)
         return 0, rew, done, {}
 
     def seed(self, seed=None):

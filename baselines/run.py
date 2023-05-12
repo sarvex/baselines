@@ -52,7 +52,7 @@ _game_envs['retro'] = {
 
 def train(args, extra_args):
     env_type, env_id = get_env_type(args)
-    print('env_type: {}'.format(env_type))
+    print(f'env_type: {env_type}')
 
     total_timesteps = int(args.num_timesteps)
     seed = args.seed
@@ -67,11 +67,12 @@ def train(args, extra_args):
 
     if args.network:
         alg_kwargs['network'] = args.network
-    else:
-        if alg_kwargs.get('network') is None:
-            alg_kwargs['network'] = get_default_network(env_type)
+    elif alg_kwargs.get('network') is None:
+        alg_kwargs['network'] = get_default_network(env_type)
 
-    print('Training {} on {}:{} with arguments \n{}'.format(args.alg, env_type, env_id, alg_kwargs))
+    print(
+        f'Training {args.alg} on {env_type}:{env_id} with arguments \n{alg_kwargs}'
+    )
 
     model = learn(
         env=env,
@@ -98,9 +99,8 @@ def build_env(args):
         elif alg == 'trpo_mpi':
             env = make_env(env_id, env_type, seed=seed)
         else:
-            frame_stack_size = 4
             env = make_vec_env(env_id, env_type, nenv, seed, gamestate=args.gamestate, reward_scale=args.reward_scale)
-            env = VecFrameStack(env, frame_stack_size)
+            env = VecFrameStack(env, 4)
 
     else:
         config = tf.ConfigProto(allow_soft_placement=True,
@@ -131,25 +131,18 @@ def get_env_type(args):
 
     if env_id in _game_envs.keys():
         env_type = env_id
-        env_id = [g for g in _game_envs[env_type]][0]
+        env_id = list(_game_envs[env_type])[0]
     else:
-        env_type = None
-        for g, e in _game_envs.items():
-            if env_id in e:
-                env_type = g
-                break
+        env_type = next((g for g, e in _game_envs.items() if env_id in e), None)
         if ':' in env_id:
             env_type = re.sub(r':.*', '', env_id)
-        assert env_type is not None, 'env_id {} is not recognized in env types'.format(env_id, _game_envs.keys())
+        assert env_type is not None, f'env_id {env_id} is not recognized in env types'
 
     return env_type, env_id
 
 
 def get_default_network(env_type):
-    if env_type in {'atari', 'retro'}:
-        return 'cnn'
-    else:
-        return 'mlp'
+    return 'cnn' if env_type in {'atari', 'retro'} else 'mlp'
 
 def get_alg_module(alg, submodule=None):
     submodule = submodule or alg
@@ -239,7 +232,7 @@ def main(args):
             done_any = done.any() if isinstance(done, np.ndarray) else done
             if done_any:
                 for i in np.nonzero(done)[0]:
-                    print('episode_rew={}'.format(episode_rew[i]))
+                    print(f'episode_rew={episode_rew[i]}')
                     episode_rew[i] = 0
 
     env.close()

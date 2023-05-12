@@ -71,12 +71,11 @@ def batch_to_seq(h, nbatch, nsteps, flat=False):
 
 def seq_to_batch(h, flat = False):
     shape = h[0].get_shape().as_list()
-    if not flat:
-        assert(len(shape) > 1)
-        nh = h[0].get_shape()[-1].value
-        return tf.reshape(tf.concat(axis=1, values=h), [-1, nh])
-    else:
+    if flat:
         return tf.reshape(tf.stack(values=h, axis=1), [-1])
+    assert(len(shape) > 1)
+    nh = h[0].get_shape()[-1].value
+    return tf.reshape(tf.concat(axis=1, values=h), [-1, nh])
 
 def lstm(xs, ms, s, scope, nh, init_scale=1.0):
     nbatch, nin = [v.value for v in xs[0].get_shape()]
@@ -166,24 +165,18 @@ def linear(p):
 
 def middle_drop(p):
     eps = 0.75
-    if 1-p<eps:
-        return eps*0.1
-    return 1-p
+    return eps*0.1 if 1-p<eps else 1-p
 
 def double_linear_con(p):
     p *= 2
     eps = 0.125
-    if 1-p<eps:
-        return eps
-    return 1-p
+    return max(1-p, eps)
 
 def double_middle_drop(p):
     eps1 = 0.75
-    eps2 = 0.25
     if 1-p<eps1:
-        if 1-p<eps2:
-            return eps2*0.5
-        return eps1*0.1
+        eps2 = 0.25
+        return eps2*0.5 if 1-p<eps2 else eps1*0.1
     return 1-p
 
 schedules = {
@@ -214,8 +207,7 @@ class Scheduler(object):
 class EpisodeStats:
     def __init__(self, nsteps, nenvs):
         self.episode_rewards = []
-        for i in range(nenvs):
-            self.episode_rewards.append([])
+        self.episode_rewards.extend([] for _ in range(nenvs))
         self.lenbuffer = deque(maxlen=40)  # rolling buffer for episode lengths
         self.rewbuffer = deque(maxlen=40)  # rolling buffer for episode rewards
         self.nsteps = nsteps
@@ -235,16 +227,10 @@ class EpisodeStats:
                     self.episode_rewards[i] = []
 
     def mean_length(self):
-        if self.lenbuffer:
-            return np.mean(self.lenbuffer)
-        else:
-            return 0  # on the first params dump, no episodes are finished
+        return np.mean(self.lenbuffer) if self.lenbuffer else 0
 
     def mean_reward(self):
-        if self.rewbuffer:
-            return np.mean(self.rewbuffer)
-        else:
-            return 0
+        return np.mean(self.rewbuffer) if self.rewbuffer else 0
 
 
 # For ACER
@@ -252,22 +238,20 @@ def get_by_index(x, idx):
     assert(len(x.get_shape()) == 2)
     assert(len(idx.get_shape()) == 1)
     idx_flattened = tf.range(0, x.shape[0]) * x.shape[1] + idx
-    y = tf.gather(tf.reshape(x, [-1]),  # flatten input
-                  idx_flattened)  # use flattened indices
-    return y
+    return tf.gather(tf.reshape(x, [-1]), idx_flattened)  # flatten input
 
 def check_shape(ts,shapes):
-    i = 0
-    for (t,shape) in zip(ts,shapes):
-        assert t.get_shape().as_list()==shape, "id " + str(i) + " shape " + str(t.get_shape()) + str(shape)
-        i += 1
+    for i, (t, shape) in enumerate(zip(ts,shapes)):
+        assert (
+            t.get_shape().as_list() == shape
+        ), f"id {str(i)} shape {str(t.get_shape())}{str(shape)}"
 
 def avg_norm(t):
     return tf.reduce_mean(tf.sqrt(tf.reduce_sum(tf.square(t), axis=-1)))
 
 def gradient_add(g1, g2, param):
     print([g1, g2, param.name])
-    assert (not (g1 is None and g2 is None)), param.name
+    assert g1 is not None or g2 is not None, param.name
     if g1 is None:
         return g2
     elif g2 is None:

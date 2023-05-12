@@ -14,15 +14,16 @@ def logsigmoid(a):
 
 """ Reference: https://github.com/openai/imitation/blob/99fbccf3e060b6e6c739bdf209758620fcdefd3c/policyopt/thutil.py#L48-L51"""
 def logit_bernoulli_entropy(logits):
-    ent = (1.-tf.nn.sigmoid(logits))*logits - logsigmoid(logits)
-    return ent
+    return (1.-tf.nn.sigmoid(logits))*logits - logsigmoid(logits)
 
 class TransitionClassifier(object):
     def __init__(self, env, hidden_size, entcoeff=0.001, lr_rate=1e-3, scope="adversary"):
         self.scope = scope
         self.observation_shape = env.observation_space.shape
         self.actions_shape = env.action_space.shape
-        self.input_shape = tuple([o+a for o, a in zip(self.observation_shape, self.actions_shape)])
+        self.input_shape = tuple(
+            o + a for o, a in zip(self.observation_shape, self.actions_shape)
+        )
         self.num_actions = env.action_space.shape[0]
         self.hidden_size = hidden_size
         self.build_ph()
@@ -83,5 +84,4 @@ class TransitionClassifier(object):
         if len(acs.shape) == 1:
             acs = np.expand_dims(acs, 0)
         feed_dict = {self.generator_obs_ph: obs, self.generator_acs_ph: acs}
-        reward = sess.run(self.reward_op, feed_dict)
-        return reward
+        return sess.run(self.reward_op, feed_dict)

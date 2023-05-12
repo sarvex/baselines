@@ -43,8 +43,7 @@ def import_function(spec):
     """
     mod_name, fn_name = spec.split(':')
     module = importlib.import_module(mod_name)
-    fn = getattr(module, fn_name)
-    return fn
+    return getattr(module, fn_name)
 
 
 def flatten_grads(var_list, grads):
@@ -59,11 +58,13 @@ def nn(input, layers_sizes, reuse=None, flatten=False, name=""):
     """
     for i, size in enumerate(layers_sizes):
         activation = tf.nn.relu if i < len(layers_sizes) - 1 else None
-        input = tf.layers.dense(inputs=input,
-                                units=size,
-                                kernel_initializer=tf.contrib.layers.xavier_initializer(),
-                                reuse=reuse,
-                                name=name + '_' + str(i))
+        input = tf.layers.dense(
+            inputs=input,
+            units=size,
+            kernel_initializer=tf.contrib.layers.xavier_initializer(),
+            reuse=reuse,
+            name=f'{name}_{str(i)}',
+        )
         if activation:
             input = activation(input)
     if flatten:

@@ -50,7 +50,7 @@ class ReplayBuffer:
         transitions = self.sample_transitions(buffers, batch_size)
 
         for key in (['r', 'o_2', 'ag_2'] + list(self.buffers.keys())):
-            assert key in transitions, "key %s missing from transitions" % key
+            assert key in transitions, f"key {key} missing from transitions"
 
         return transitions
 

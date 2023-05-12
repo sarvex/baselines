@@ -13,7 +13,7 @@ remove_version_re = re.compile(r'-v\d+$')
 def register_benchmark(benchmark):
     for b in _BENCHMARKS:
         if b['name'] == benchmark['name']:
-            raise ValueError('Benchmark with name %s already registered!' % b['name'])
+            raise ValueError(f"Benchmark with name {b['name']} already registered!")
 
     # automatically add a description if it is not present
     if 'tasks' in benchmark:
@@ -31,7 +31,9 @@ def get_benchmark(benchmark_name):
     for b in _BENCHMARKS:
         if b['name'] == benchmark_name:
             return b
-    raise ValueError('%s not found! Known benchmarks: %s' % (benchmark_name, list_benchmarks()))
+    raise ValueError(
+        f'{benchmark_name} not found! Known benchmarks: {list_benchmarks()}'
+    )
 
 
 def get_task(benchmark, env_id):
@@ -100,7 +102,7 @@ register_benchmark({
 _bulletsmall = [
     'InvertedDoublePendulum', 'InvertedPendulum', 'HalfCheetah', 'Reacher', 'Walker2D', 'Hopper', 'Ant'
 ]
-_bulletsmall = [e + 'BulletEnv-v0' for e in _bulletsmall]
+_bulletsmall = [f'{e}BulletEnv-v0' for e in _bulletsmall]
 
 register_benchmark({
     'name': 'Bullet1M',

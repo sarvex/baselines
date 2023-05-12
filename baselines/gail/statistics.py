@@ -19,13 +19,13 @@ class stats():
         self.histogram_summaries = []
         with tf.variable_scope('summary'):
             for k in scalar_keys:
-                ph = tf.placeholder('float32', None, name=k+'.scalar.summary')
-                sm = tf.summary.scalar(k+'.scalar.summary', ph)
+                ph = tf.placeholder('float32', None, name=f'{k}.scalar.summary')
+                sm = tf.summary.scalar(f'{k}.scalar.summary', ph)
                 self.scalar_summaries_ph.append(ph)
                 self.scalar_summaries.append(sm)
             for k in histogram_keys:
-                ph = tf.placeholder('float32', None, name=k+'.histogram.summary')
-                sm = tf.summary.scalar(k+'.histogram.summary', ph)
+                ph = tf.placeholder('float32', None, name=f'{k}.histogram.summary')
+                sm = tf.summary.scalar(f'{k}.histogram.summary', ph)
                 self.histogram_summaries_ph.append(ph)
                 self.histogram_summaries.append(sm)
 
@@ -38,8 +38,6 @@ class stats():
             return
         sess = U.get_session()
         keys = self.scalar_summaries_ph + self.histogram_summaries_ph
-        feed_dict = {}
-        for k, v in zip(keys, values):
-            feed_dict.update({k: v})
+        feed_dict = dict(zip(keys, values))
         summaries_str = sess.run(self.summaries, feed_dict)
         writer.add_summary(summaries_str, iter)

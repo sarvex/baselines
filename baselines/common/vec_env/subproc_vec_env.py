@@ -124,15 +124,14 @@ def _flatten_obs(obs):
     assert isinstance(obs, (list, tuple))
     assert len(obs) > 0
 
-    if isinstance(obs[0], dict):
-        keys = obs[0].keys()
-        return {k: np.stack([o[k] for o in obs]) for k in keys}
-    else:
+    if not isinstance(obs[0], dict):
         return np.stack(obs)
+    keys = obs[0].keys()
+    return {k: np.stack([o[k] for o in obs]) for k in keys}
 
 def _flatten_list(l):
     assert isinstance(l, (list, tuple))
     assert len(l) > 0
-    assert all([len(l_) > 0 for l_ in l])
+    assert all(len(l_) > 0 for l_ in l)
 
     return [l__ for l_ in l for l__ in l_]

@@ -52,11 +52,7 @@ def learn(network, env,
     else:
         nb_epochs = 500
 
-    if MPI is not None:
-        rank = MPI.COMM_WORLD.Get_rank()
-    else:
-        rank = 0
-
+    rank = MPI.COMM_WORLD.Get_rank() if MPI is not None else 0
     nb_actions = env.action_space.shape[-1]
     assert (np.abs(env.action_space.low) == env.action_space.high).all()  # we assume symmetric actions.
 
@@ -206,11 +202,7 @@ def learn(network, env,
                             eval_episode_rewards_history.append(eval_episode_reward[d])
                             eval_episode_reward[d] = 0.0
 
-        if MPI is not None:
-            mpi_size = MPI.COMM_WORLD.Get_size()
-        else:
-            mpi_size = 1
-
+        mpi_size = MPI.COMM_WORLD.Get_size() if MPI is not None else 1
         # Log stats.
         # XXX shouldn't call np.mean on variable length lists
         duration = time.time() - start_time
@@ -244,7 +236,7 @@ def learn(network, env,
             elif np.isscalar(x):
                 return x
             else:
-                raise ValueError('expected scalar, got %s'%x)
+                raise ValueError(f'expected scalar, got {x}')
 
         combined_stats_sums = np.array([ np.array(x).flatten()[0] for x in combined_stats.values()])
         if MPI is not None:

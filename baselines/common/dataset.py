@@ -28,10 +28,10 @@ class Dataset(object):
         cur_batch_size = min(batch_size, self.n - self._next_id)
         self._next_id += cur_batch_size
 
-        data_map = dict()
-        for key in self.data_map:
-            data_map[key] = self.data_map[key][cur_id:cur_id+cur_batch_size]
-        return data_map
+        return {
+            key: self.data_map[key][cur_id : cur_id + cur_batch_size]
+            for key in self.data_map
+        }
 
     def iterate_once(self, batch_size):
         if self.enable_shuffle: self.shuffle()
@@ -41,9 +41,7 @@ class Dataset(object):
         self._next_id = 0
 
     def subset(self, num_elements, deterministic=True):
-        data_map = dict()
-        for key in self.data_map:
-            data_map[key] = self.data_map[key][:num_elements]
+        data_map = {key: self.data_map[key][:num_elements] for key in self.data_map}
         return Dataset(data_map, deterministic)
 
 

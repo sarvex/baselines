@@ -21,8 +21,9 @@ def observation_placeholder(ob_space, batch_size=None, name='Ob'):
     tensorflow placeholder tensor
     '''
 
-    assert isinstance(ob_space, Discrete) or isinstance(ob_space, Box) or isinstance(ob_space, MultiDiscrete), \
-        'Can only deal with Discrete and Box observation spaces for now'
+    assert isinstance(
+        ob_space, (Discrete, Box, MultiDiscrete)
+    ), 'Can only deal with Discrete and Box observation spaces for now'
 
     dtype = ob_space.dtype
     if dtype == np.int8:

@@ -135,7 +135,7 @@ class SimpleEnv(gym.Env):
         self._cur_step += 1
         done = self._cur_step >= self._max_steps
         reward = self._cur_step / self._max_steps
-        return self._cur_obs, reward, done, {'foo': 'bar' + str(reward)}
+        return self._cur_obs, reward, done, {'foo': f'bar{str(reward)}'}
 
     def reset(self):
         self._cur_obs = self._start_obs

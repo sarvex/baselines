@@ -18,10 +18,9 @@ class AdaptiveParamNoiseSpec(object):
             self.current_stddev *= self.adoption_coefficient
 
     def get_stats(self):
-        stats = {
+        return {
             'param_noise_stddev': self.current_stddev,
         }
-        return stats
 
     def __repr__(self):
         fmt = 'AdaptiveParamNoiseSpec(initial_stddev={}, desired_action_stddev={}, adoption_coefficient={})'
@@ -42,7 +41,7 @@ class NormalActionNoise(ActionNoise):
         return np.random.normal(self.mu, self.sigma)
 
     def __repr__(self):
-        return 'NormalActionNoise(mu={}, sigma={})'.format(self.mu, self.sigma)
+        return f'NormalActionNoise(mu={self.mu}, sigma={self.sigma})'
 
 
 # Based on http://math.stackexchange.com/questions/1287634/implementing-ornstein-uhlenbeck-in-matlab
@@ -64,4 +63,4 @@ class OrnsteinUhlenbeckActionNoise(ActionNoise):
         self.x_prev = self.x0 if self.x0 is not None else np.zeros_like(self.mu)
 
     def __repr__(self):
-        return 'OrnsteinUhlenbeckActionNoise(mu={}, sigma={})'.format(self.mu, self.sigma)
+        return f'OrnsteinUhlenbeckActionNoise(mu={self.mu}, sigma={self.sigma})'

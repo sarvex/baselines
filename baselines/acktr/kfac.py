@@ -28,11 +28,7 @@ class KfacOptimizer():
         self._use_float64 = use_float64
         self._factored_damping = factored_damping
         self._cold_iter = cold_iter
-        if cold_lr == None:
-            # good heuristics
-            self._cold_lr = self._lr# * 3.
-        else:
-            self._cold_lr = cold_lr
+        self._cold_lr = self._lr if cold_lr is None else cold_lr
         self._stats_accum_iter = stats_accum_iter
         self._weight_decay_dict = weight_decay_dict
         self._diag_init_coeff = 0.
@@ -83,7 +79,7 @@ class KfacOptimizer():
                 print (op_names)
                 print (len(np.unique(op_names)))
                 assert len(np.unique(op_names)) == 1, gradient.name + \
-                    ' is shared among different computation OPs'
+                        ' is shared among different computation OPs'
 
                 bTensors = reduce(lambda x, y: x + y,
                                   [item['bpropFactors'] for item in factors])
@@ -94,7 +90,8 @@ class KfacOptimizer():
                 fpropOp = factors[0]['op']
             else:
                 fpropOp_name = re.search(
-                    'gradientsSampled(_[0-9]+|)/(.+?)_grad', bpropOp_name).group(2)
+                    'gradientsSampled(_[0-9]+|)/(.+?)_grad', bpropOp_name
+                )[2]
                 fpropOp = graph.get_operation_by_name(fpropOp_name)
                 if fpropOp.op_def.name in KFAC_OPS:
                     # Known OPs
@@ -102,7 +99,7 @@ class KfacOptimizer():
                     bTensor = [
                         i for i in bpropOp.inputs if 'gradientsSampled' in i.name][-1]
                     bTensorShape = fpropOp.outputs[0].get_shape()
-                    if bTensor.get_shape()[0].value == None:
+                    if bTensor.get_shape()[0].value is None:
                         bTensor.set_shape(bTensorShape)
                     bTensors.append(bTensor)
                     ###
@@ -116,19 +113,22 @@ class KfacOptimizer():
                     # unknown OPs, block approximation used
                     bInputsList = [i for i in bpropOp.inputs[
                         0].op.inputs if 'gradientsSampled' in i.name if 'Shape' not in i.name]
-                    if len(bInputsList) > 0:
+                    if bInputsList:
                         bTensor = bInputsList[0]
                         bTensorShape = fpropOp.outputs[0].get_shape()
-                        if len(bTensor.get_shape()) > 0 and bTensor.get_shape()[0].value == None:
+                        if (
+                            len(bTensor.get_shape()) > 0
+                            and bTensor.get_shape()[0].value is None
+                        ):
                             bTensor.set_shape(bTensorShape)
                         bTensors.append(bTensor)
-                    fpropOp_name = opTypes.append('UNK-' + fpropOp.op_def.name)
+                    fpropOp_name = opTypes.append(f'UNK-{fpropOp.op_def.name}')
 
             return {'opName': fpropOp_name, 'op': fpropOp, 'fpropFactors': fTensors, 'bpropFactors': bTensors}
 
         for t, param in zip(g, varlist):
             if KFAC_DEBUG:
-                print(('get factor for '+param.name))
+                print(f'get factor for {param.name}')
             factors = searchFactors(t, graph)
             factorTensors[param] = factors
 
@@ -144,12 +144,18 @@ class KfacOptimizer():
             if factorTensors[param]['opName'] == 'BiasAdd':
                 factorTensors[param]['assnWeights'] = None
                 for item in varlist:
-                    if len(factorTensors[item]['bpropFactors']) > 0:
-                        if (set(factorTensors[item]['bpropFactors']) == set(factorTensors[param]['bpropFactors'])) and (len(factorTensors[item]['fpropFactors']) > 0):
-                            factorTensors[param]['assnWeights'] = item
-                            factorTensors[item]['assnBias'] = param
-                            factorTensors[param]['bpropFactors'] = factorTensors[
-                                item]['bpropFactors']
+                    if (
+                        len(factorTensors[item]['bpropFactors']) > 0
+                        and (
+                            set(factorTensors[item]['bpropFactors'])
+                            == set(factorTensors[param]['bpropFactors'])
+                        )
+                        and (len(factorTensors[item]['fpropFactors']) > 0)
+                    ):
+                        factorTensors[param]['assnWeights'] = item
+                        factorTensors[item]['assnBias'] = param
+                        factorTensors[param]['bpropFactors'] = factorTensors[
+                            item]['bpropFactors']
 
         ########
 
@@ -159,19 +165,17 @@ class KfacOptimizer():
         for key in ['fpropFactors', 'bpropFactors']:
             for i, param in enumerate(varlist):
                 if len(factorTensors[param][key]) > 0:
-                    if (key + '_concat') not in factorTensors[param]:
+                    if f'{key}_concat' not in factorTensors[param]:
                         name_scope = factorTensors[param][key][0].name.split(':')[
                             0]
                         with tf.name_scope(name_scope):
-                            factorTensors[param][
-                                key + '_concat'] = tf.concat(factorTensors[param][key], 0)
+                            factorTensors[param][f'{key}_concat'] = tf.concat(factorTensors[param][key], 0)
                 else:
-                    factorTensors[param][key + '_concat'] = None
+                    factorTensors[param][f'{key}_concat'] = None
                 for j, param2 in enumerate(varlist[(i + 1):]):
                     if (len(factorTensors[param][key]) > 0) and (set(factorTensors[param2][key]) == set(factorTensors[param][key])):
                         factorTensors[param2][key] = factorTensors[param][key]
-                        factorTensors[param2][
-                            key + '_concat'] = factorTensors[param][key + '_concat']
+                        factorTensors[param2][f'{key}_concat'] = factorTensors[param][f'{key}_concat']
         ########
 
         if KFAC_DEBUG:
@@ -201,10 +205,7 @@ class KfacOptimizer():
                         Oh = bpropFactor.get_shape()[1]
                         Ow = bpropFactor.get_shape()[2]
                         if Oh == 1 and Ow == 1 and self._channel_fac:
-                            # factorization along the channels do not support
-                            # homogeneous coordinate
-                            var_assnBias = factors[var]['assnBias']
-                            if var_assnBias:
+                            if var_assnBias := factors[var]['assnBias']:
                                 factors[var]['assnBias'] = None
                                 factors[var_assnBias]['assnWeights'] = None
                 ##
@@ -236,8 +237,12 @@ class KfacOptimizer():
                                     # support homogeneous coordinate, assnBias
                                     # is always None
                                     fpropFactor2_size = Kh * Kw
-                                    slot_fpropFactor_stats2 = tf.Variable(tf.diag(tf.ones(
-                                        [fpropFactor2_size])) * self._diag_init_coeff, name='KFAC_STATS/' + fpropFactor.op.name, trainable=False)
+                                    slot_fpropFactor_stats2 = tf.Variable(
+                                        tf.diag(tf.ones([fpropFactor2_size]))
+                                        * self._diag_init_coeff,
+                                        name=f'KFAC_STATS/{fpropFactor.op.name}',
+                                        trainable=False,
+                                    )
                                     self.stats[var]['fprop_concat_stats'].append(
                                         slot_fpropFactor_stats2)
 
@@ -254,8 +259,12 @@ class KfacOptimizer():
                             if not self._blockdiag_bias and self.stats[var]['assnBias']:
                                 fpropFactor_size += 1
 
-                            slot_fpropFactor_stats = tf.Variable(tf.diag(tf.ones(
-                                [fpropFactor_size])) * self._diag_init_coeff, name='KFAC_STATS/' + fpropFactor.op.name, trainable=False)
+                            slot_fpropFactor_stats = tf.Variable(
+                                tf.diag(tf.ones([fpropFactor_size]))
+                                * self._diag_init_coeff,
+                                name=f'KFAC_STATS/{fpropFactor.op.name}',
+                                trainable=False,
+                            )
                             self.stats[var]['fprop_concat_stats'].append(
                                 slot_fpropFactor_stats)
                             if opType != 'Conv2D':
@@ -265,20 +274,23 @@ class KfacOptimizer():
                             self.stats[var][
                                 'fprop_concat_stats'] = tmpStatsCache[fpropFactor]
 
-                    if bpropFactor is not None:
-                        # no need to collect backward stats for bias vectors if
-                        # using homogeneous coordinates
-                        if not((not self._blockdiag_bias) and self.stats[var]['assnWeights']):
-                            if bpropFactor not in tmpStatsCache:
-                                slot_bpropFactor_stats = tf.Variable(tf.diag(tf.ones([bpropFactor.get_shape(
-                                )[-1]])) * self._diag_init_coeff, name='KFAC_STATS/' + bpropFactor.op.name, trainable=False)
-                                self.stats[var]['bprop_concat_stats'].append(
-                                    slot_bpropFactor_stats)
-                                tmpStatsCache[bpropFactor] = self.stats[
-                                    var]['bprop_concat_stats']
-                            else:
-                                self.stats[var][
-                                    'bprop_concat_stats'] = tmpStatsCache[bpropFactor]
+                    if bpropFactor is not None and (
+                        self._blockdiag_bias or not self.stats[var]['assnWeights']
+                    ):
+                        if bpropFactor not in tmpStatsCache:
+                            slot_bpropFactor_stats = tf.Variable(
+                                tf.diag(tf.ones([bpropFactor.get_shape()[-1]]))
+                                * self._diag_init_coeff,
+                                name=f'KFAC_STATS/{bpropFactor.op.name}',
+                                trainable=False,
+                            )
+                            self.stats[var]['bprop_concat_stats'].append(
+                                slot_bpropFactor_stats)
+                            tmpStatsCache[bpropFactor] = self.stats[
+                                var]['bprop_concat_stats']
+                        else:
+                            self.stats[var][
+                                'bprop_concat_stats'] = tmpStatsCache[bpropFactor]
 
         return self.stats
 

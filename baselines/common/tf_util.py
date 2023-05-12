@@ -182,7 +182,9 @@ def function(inputs, outputs, updates=None, givens=None):
 class _Function(object):
     def __init__(self, inputs, outputs, updates, givens):
         for inpt in inputs:
-            if not hasattr(inpt, 'make_feed_dict') and not (type(inpt) is tf.Tensor and len(inpt.op.inputs) == 0):
+            if not hasattr(inpt, 'make_feed_dict') and (
+                type(inpt) is not tf.Tensor or len(inpt.op.inputs) != 0
+            ):
                 assert False, "inputs should all be placeholders, constants, or have a make_feed_dict method"
         self.inputs = inputs
         self.input_names = {inp.name.split("/")[-1].split(":")[0]: inp for inp in inputs}
@@ -208,8 +210,7 @@ class _Function(object):
             self._feed_input(feed_dict, inpt, value)
         for inpt_name, value in kwargs.items():
             self._feed_input(feed_dict, self.input_names[inpt_name], value)
-        results = get_session().run(self.outputs_update, feed_dict=feed_dict)[:-1]
-        return results
+        return get_session().run(self.outputs_update, feed_dict=feed_dict)[:-1]
 
 # ================================================================
 # Flat vectors
@@ -274,8 +275,9 @@ def get_placeholder(name, dtype, shape):
     if name in _PLACEHOLDER_CACHE:
         out, dtype1, shape1 = _PLACEHOLDER_CACHE[name]
         if out.graph == tf.get_default_graph():
-            assert dtype1 == dtype and shape1 == shape, \
-                'Placeholder with name {} has already been registered and has shape {}, different from requested {}'.format(name, shape1, shape)
+            assert (
+                dtype1 == dtype and shape1 == shape
+            ), f'Placeholder with name {name} has already been registered and has shape {shape1}, different from requested {shape}'
             return out
 
     out = tf.placeholder(dtype=dtype, shape=shape, name=name)
@@ -363,12 +365,9 @@ def load_variables(load_path, variables=None, sess=None):
     restores = []
     if isinstance(loaded_params, list):
         assert len(loaded_params) == len(variables), 'number of variables loaded mismatches len(variables)'
-        for d, v in zip(loaded_params, variables):
-            restores.append(v.assign(d))
+        restores.extend(v.assign(d) for d, v in zip(loaded_params, variables))
     else:
-        for v in variables:
-            restores.append(v.assign(loaded_params[v.name]))
-
+        restores.extend(v.assign(loaded_params[v.name]) for v in variables)
     sess.run(restores)
 
 # ================================================================
@@ -395,23 +394,15 @@ def adjust_shape(placeholder, data):
 
     placeholder_shape = [x or -1 for x in placeholder.shape.as_list()]
 
-    assert _check_shape(placeholder_shape, data.shape), \
-        'Shape of data {} is not compatible with shape of the placeholder {}'.format(data.shape, placeholder_shape)
+    assert _check_shape(
+        placeholder_shape, data.shape
+    ), f'Shape of data {data.shape} is not compatible with shape of the placeholder {placeholder_shape}'
 
     return np.reshape(data, placeholder_shape)
 
 
 def _check_shape(placeholder_shape, data_shape):
     ''' check if two shapes are compatible (i.e. differ only by dimensions of size 1, or by the batch dimension)'''
-
-    return True
-    squeezed_placeholder_shape = _squeeze_shape(placeholder_shape)
-    squeezed_data_shape = _squeeze_shape(data_shape)
-
-    for i, s_data in enumerate(squeezed_data_shape):
-        s_placeholder = squeezed_placeholder_shape[i]
-        if s_placeholder != -1 and s_data != s_placeholder:
-            return False
 
     return True
 

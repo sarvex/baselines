@@ -22,7 +22,7 @@ def load_results(file):
     if not os.path.exists(file):
         return None
     with open(file, 'r') as f:
-        lines = [line for line in f]
+        lines = list(f)
     if len(lines) < 2:
         return None
     keys = [name.strip() for name in lines[0].split(',')]
@@ -31,10 +31,7 @@ def load_results(file):
         data = data.reshape(1, -1)
     assert data.ndim == 2
     assert data.shape[-1] == len(keys)
-    result = {}
-    for idx, key in enumerate(keys):
-        result[key] = data[:, idx]
-    return result
+    return {key: data[:, idx] for idx, key in enumerate(keys)}
 
 
 def pad(xs, value=np.nan):
@@ -66,9 +63,9 @@ for curr_path in paths:
         continue
     results = load_results(os.path.join(curr_path, 'progress.csv'))
     if not results:
-        print('skipping {}'.format(curr_path))
+        print(f'skipping {curr_path}')
         continue
-    print('loading {} ({})'.format(curr_path, len(results['epoch'])))
+    print(f"loading {curr_path} ({len(results['epoch'])})")
     with open(os.path.join(curr_path, 'params.json'), 'r') as f:
         params = json.load(f)
 
@@ -77,14 +74,9 @@ for curr_path in paths:
     env_id = params['env_name']
     replay_strategy = params['replay_strategy']
 
-    if replay_strategy == 'future':
-        config = 'her'
-    else:
-        config = 'ddpg'
-    if 'Dense' in env_id:
-        config += '-dense'
-    else:
-        config += '-sparse'
+    config = ('her' if replay_strategy == 'future' else 'ddpg') + (
+        '-dense' if 'Dense' in env_id else '-sparse'
+    )
     env_id = env_id.replace('Dense', '')
 
     # Process and smooth data.
@@ -103,7 +95,7 @@ for curr_path in paths:
 
 # Plot data.
 for env_id in sorted(data.keys()):
-    print('exporting {}'.format(env_id))
+    print(f'exporting {env_id}')
     plt.clf()
 
     for config in sorted(data[env_id].keys()):
@@ -117,4 +109,4 @@ for env_id in sorted(data.keys()):
     plt.xlabel('Epoch')
     plt.ylabel('Median Success Rate')
     plt.legend()
-    plt.savefig(os.path.join(args.dir, 'fig_{}.png'.format(env_id)))
+    plt.savefig(os.path.join(args.dir, f'fig_{env_id}.png'))

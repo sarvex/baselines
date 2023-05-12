@@ -30,7 +30,9 @@ class HumanOutputFormat(KVWriter, SeqWriter):
             self.file = open(filename_or_file, 'wt')
             self.own_file = True
         else:
-            assert hasattr(filename_or_file, 'read'), 'expected file or str, got %s'%filename_or_file
+            assert hasattr(
+                filename_or_file, 'read'
+            ), f'expected file or str, got {filename_or_file}'
             self.file = filename_or_file
             self.own_file = False
 
@@ -38,14 +40,11 @@ class HumanOutputFormat(KVWriter, SeqWriter):
         # Create strings for printing
         key2str = {}
         for (key, val) in sorted(kvs.items()):
-            if hasattr(val, '__float__'):
-                valstr = '%-8.3g' % val
-            else:
-                valstr = str(val)
+            valstr = '%-8.3g' % val if hasattr(val, '__float__') else str(val)
             key2str[self._truncate(key)] = self._truncate(valstr)
 
         # Find max widths
-        if len(key2str) == 0:
+        if not key2str:
             print('WARNING: tried to write empty key-value dict')
             return
         else:
@@ -55,13 +54,10 @@ class HumanOutputFormat(KVWriter, SeqWriter):
         # Write out the data
         dashes = '-' * (keywidth + valwidth + 7)
         lines = [dashes]
-        for (key, val) in sorted(key2str.items(), key=lambda kv: kv[0].lower()):
-            lines.append('| %s%s | %s%s |' % (
-                key,
-                ' ' * (keywidth - len(key)),
-                val,
-                ' ' * (valwidth - len(val)),
-            ))
+        lines.extend(
+            f"| {key}{' ' * (keywidth - len(key))} | {val}{' ' * (valwidth - len(val))} |"
+            for key, val in sorted(key2str.items(), key=lambda kv: kv[0].lower())
+        )
         lines.append(dashes)
         self.file.write('\n'.join(lines) + '\n')
 
@@ -70,7 +66,7 @@ class HumanOutputFormat(KVWriter, SeqWriter):
 
     def _truncate(self, s):
         maxlen = 30
-        return s[:maxlen-3] + '...' if len(s) > maxlen else s
+        return f'{s[:maxlen - 3]}...' if len(s) > maxlen else s
 
     def writeseq(self, seq):
         seq = list(seq)
@@ -106,10 +102,7 @@ class CSVOutputFormat(KVWriter):
         self.sep = ','
 
     def writekvs(self, kvs):
-        # Add our current row to the history
-        extra_keys = list(kvs.keys() - self.keys)
-        extra_keys.sort()
-        if extra_keys:
+        if extra_keys := sorted(kvs.keys() - self.keys):
             self.keys.extend(extra_keys)
             self.file.seek(0)
             lines = self.file.readlines()
@@ -176,15 +169,15 @@ def make_output_format(format, ev_dir, log_suffix=''):
     if format == 'stdout':
         return HumanOutputFormat(sys.stdout)
     elif format == 'log':
-        return HumanOutputFormat(osp.join(ev_dir, 'log%s.txt' % log_suffix))
+        return HumanOutputFormat(osp.join(ev_dir, f'log{log_suffix}.txt'))
     elif format == 'json':
-        return JSONOutputFormat(osp.join(ev_dir, 'progress%s.json' % log_suffix))
+        return JSONOutputFormat(osp.join(ev_dir, f'progress{log_suffix}.json'))
     elif format == 'csv':
-        return CSVOutputFormat(osp.join(ev_dir, 'progress%s.csv' % log_suffix))
+        return CSVOutputFormat(osp.join(ev_dir, f'progress{log_suffix}.csv'))
     elif format == 'tensorboard':
-        return TensorBoardOutputFormat(osp.join(ev_dir, 'tb%s' % log_suffix))
+        return TensorBoardOutputFormat(osp.join(ev_dir, f'tb{log_suffix}'))
     else:
-        raise ValueError('Unknown format specified: %s' % (format,))
+        raise ValueError(f'Unknown format specified: {format}')
 
 # ================================================================
 # API
@@ -261,7 +254,7 @@ dump_tabular = dumpkvs
 
 @contextmanager
 def profile_kv(scopename):
-    logkey = 'wait_' + scopename
+    logkey = f'wait_{scopename}'
     tstart = time.time()
     try:
         yield
@@ -361,12 +354,14 @@ class Logger(object):
                 fmt.writeseq(map(str, args))
 
 def get_rank_without_mpi_import():
-    # check environment variables here instead of importing mpi4py
-    # to avoid calling MPI_Init() when this module is imported
-    for varname in ['PMI_RANK', 'OMPI_COMM_WORLD_RANK']:
-        if varname in os.environ:
-            return int(os.environ[varname])
-    return 0
+    return next(
+        (
+            int(os.environ[varname])
+            for varname in ['PMI_RANK', 'OMPI_COMM_WORLD_RANK']
+            if varname in os.environ
+        ),
+        0,
+    )
 
 
 def configure(dir=None, format_strs=None, comm=None, log_suffix=''):
@@ -396,7 +391,7 @@ def configure(dir=None, format_strs=None, comm=None, log_suffix=''):
 
     Logger.CURRENT = Logger(dir=dir, output_formats=output_formats, comm=comm)
     if output_formats:
-        log('Logging to %s'%dir)
+        log(f'Logging to {dir}')
 
 def _configure_default_logger():
     configure()
@@ -457,8 +452,7 @@ def read_json(fname):
     import pandas
     ds = []
     with open(fname, 'rt') as fh:
-        for line in fh:
-            ds.append(json.loads(line))
+        ds.extend(json.loads(line) for line in fh)
     return pandas.DataFrame(ds)
 
 def read_csv(fname):
@@ -479,7 +473,9 @@ def read_tb(path):
     elif osp.basename(path).startswith("events."):
         fnames = [path]
     else:
-        raise NotImplementedError("Expected tensorboard file or directory containing them. Got %s"%path)
+        raise NotImplementedError(
+            f"Expected tensorboard file or directory containing them. Got {path}"
+        )
     tag2pairs = defaultdict(list)
     maxstep = 0
     for fname in fnames:

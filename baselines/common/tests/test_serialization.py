@@ -104,7 +104,7 @@ def test_coexistence(learn_fn, network_fn):
     learn = get_learn_function(learn_fn)
 
     kwargs = {}
-    kwargs.update(network_kwargs[network_fn])
+    kwargs |= network_kwargs[network_fn]
     kwargs.update(learn_kwargs[learn_fn])
 
     learn =  partial(learn, env=env, network=network_fn, total_timesteps=0, **kwargs)

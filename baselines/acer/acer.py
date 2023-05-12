@@ -194,10 +194,24 @@ class Model(object):
         names_ops = ['loss', 'loss_q', 'entropy', 'loss_policy', 'loss_f', 'loss_bc', 'explained_variance',
                      'norm_grads']
         if trust_region:
-            run_ops = run_ops + [norm_grads_q, norm_grads_policy, avg_norm_grads_f, avg_norm_k, avg_norm_g, avg_norm_k_dot_g,
-                                 avg_norm_adj]
-            names_ops = names_ops + ['norm_grads_q', 'norm_grads_policy', 'avg_norm_grads_f', 'avg_norm_k', 'avg_norm_g',
-                                     'avg_norm_k_dot_g', 'avg_norm_adj']
+            run_ops += [
+                norm_grads_q,
+                norm_grads_policy,
+                avg_norm_grads_f,
+                avg_norm_k,
+                avg_norm_g,
+                avg_norm_k_dot_g,
+                avg_norm_adj,
+            ]
+            names_ops += [
+                'norm_grads_q',
+                'norm_grads_policy',
+                'avg_norm_grads_f',
+                'avg_norm_k',
+                'avg_norm_g',
+                'avg_norm_k_dot_g',
+                'avg_norm_adj',
+            ]
 
         def train(obs, actions, rewards, dones, mus, states, masks, steps):
             cur_lr = lr.value_steps(steps)

@@ -37,7 +37,7 @@ class Monitor(Wrapper):
         for k in self.reset_keywords:
             v = kwargs.get(k)
             if v is None:
-                raise ValueError('Expected you to pass kwarg %s into reset'%k)
+                raise ValueError(f'Expected you to pass kwarg {k} into reset')
             self.current_reset_info[k] = v
         return self.env.reset(**kwargs)
 
@@ -67,7 +67,7 @@ class Monitor(Wrapper):
             self.episode_rewards.append(eprew)
             self.episode_lengths.append(eplen)
             self.episode_times.append(time.time() - self.tstart)
-            epinfo.update(self.current_reset_info)
+            epinfo |= self.current_reset_info
             if self.results_writer:
                 self.results_writer.write_row(epinfo)
             assert isinstance(info, dict)
@@ -105,10 +105,10 @@ class ResultsWriter(object):
             if osp.isdir(filename):
                 filename = osp.join(filename, Monitor.EXT)
             else:
-                filename = filename + "." + Monitor.EXT
+                filename = f"{filename}.{Monitor.EXT}"
         self.f = open(filename, "wt")
         if isinstance(header, dict):
-            header = '# {} \n'.format(json.dumps(header))
+            header = f'# {json.dumps(header)} \n'
         self.f.write(header)
         self.logger = csv.DictWriter(self.f, fieldnames=('r', 'l', 't')+tuple(extra_keys))
         self.logger.writeheader()
@@ -121,7 +121,7 @@ class ResultsWriter(object):
 
 
 def get_monitor_files(dir):
-    return glob(osp.join(dir, "*" + Monitor.EXT))
+    return glob(osp.join(dir, f"*{Monitor.EXT}"))
 
 def load_results(dir):
     import pandas
@@ -129,7 +129,9 @@ def load_results(dir):
         glob(osp.join(dir, "*monitor.json")) +
         glob(osp.join(dir, "*monitor.csv"))) # get both csv and (old) json files
     if not monitor_files:
-        raise LoadMonitorResultsError("no monitor files of the form *%s found in %s" % (Monitor.EXT, dir))
+        raise LoadMonitorResultsError(
+            f"no monitor files of the form *{Monitor.EXT} found in {dir}"
+        )
     dfs = []
     headers = []
     for fname in monitor_files:

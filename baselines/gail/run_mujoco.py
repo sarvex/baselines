@@ -56,15 +56,14 @@ def argsparser():
 
 
 def get_task_name(args):
-    task_name = args.algo + "_gail."
+    task_name = f"{args.algo}_gail."
     if args.pretrained:
         task_name += "with_pretrained."
     if args.traj_limitation != np.inf:
         task_name += "transition_limitation_%d." % args.traj_limitation
     task_name += args.env_id.split("-")[0]
-    task_name = task_name + ".g_step_" + str(args.g_step) + ".d_step_" + str(args.d_step) + \
-        ".policy_entcoeff_" + str(args.policy_entcoeff) + ".adversary_entcoeff_" + str(args.adversary_entcoeff)
-    task_name += ".seed_" + str(args.seed)
+    task_name = f"{task_name}.g_step_{str(args.g_step)}.d_step_{str(args.d_step)}.policy_entcoeff_{str(args.policy_entcoeff)}.adversary_entcoeff_{str(args.adversary_entcoeff)}"
+    task_name += f".seed_{str(args.seed)}"
     return task_name
 
 
@@ -229,9 +228,14 @@ def traj_1_generator(pi, env, horizon, stochastic):
     rews = np.array(rews)
     news = np.array(news)
     acs = np.array(acs)
-    traj = {"ob": obs, "rew": rews, "new": news, "ac": acs,
-            "ep_ret": cur_ep_ret, "ep_len": cur_ep_len}
-    return traj
+    return {
+        "ob": obs,
+        "rew": rews,
+        "new": news,
+        "ac": acs,
+        "ep_ret": cur_ep_ret,
+        "ep_len": cur_ep_len,
+    }
 
 
 if __name__ == '__main__':

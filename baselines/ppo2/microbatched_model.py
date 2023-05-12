@@ -12,7 +12,9 @@ class MicrobatchedModel(Model):
 
         self.nmicrobatches = nbatch_train // microbatch_size
         self.microbatch_size = microbatch_size
-        assert nbatch_train % microbatch_size == 0, 'microbatch_size ({}) should divide nbatch_train ({}) evenly'.format(microbatch_size, nbatch_train)
+        assert (
+            nbatch_train % microbatch_size == 0
+        ), f'microbatch_size ({microbatch_size}) should divide nbatch_train ({nbatch_train}) evenly'
 
         super().__init__(
                 policy=policy,

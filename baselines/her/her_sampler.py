@@ -11,11 +11,7 @@ def make_sample_her_transitions(replay_strategy, replay_k, reward_fun):
             as many HER replays as regular replays are used)
         reward_fun (function): function to re-compute the reward with substituted goals
     """
-    if replay_strategy == 'future':
-        future_p = 1 - (1. / (1 + replay_k))
-    else:  # 'replay_strategy' == 'none'
-        future_p = 0
-
+    future_p = 1 - (1. / (1 + replay_k)) if replay_strategy == 'future' else 0
     def _sample_her_transitions(episode_batch, batch_size_in_transitions):
         """episode_batch is {key: array(buffer_size x T x dim_key)}
         """
@@ -53,8 +49,10 @@ def make_sample_her_transitions(replay_strategy, replay_k, reward_fun):
         reward_params['info'] = info
         transitions['r'] = reward_fun(**reward_params)
 
-        transitions = {k: transitions[k].reshape(batch_size, *transitions[k].shape[1:])
-                       for k in transitions.keys()}
+        transitions = {
+            k: transitions[k].reshape(batch_size, *transitions[k].shape[1:])
+            for k in transitions
+        }
 
         assert(transitions['u'].shape[0] == batch_size_in_transitions)
 

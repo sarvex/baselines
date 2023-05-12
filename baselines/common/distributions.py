@@ -171,7 +171,7 @@ class CategoricalPd(Pd):
             logits_shape_list = self.logits.get_shape().as_list()[:-1]
             for xs, ls in zip(x_shape_list, logits_shape_list):
                 if xs is not None and ls is not None:
-                    assert xs == ls, 'shape mismatch: {} in x vs {} in logits'.format(xs, ls)
+                    assert xs == ls, f'shape mismatch: {xs} in x vs {ls} in logits'
 
             x = tf.one_hot(x, self.logits.get_shape().as_list()[-1])
         else:
@@ -291,10 +291,7 @@ def make_pdtype(ac_space):
 
 def shape_el(v, i):
     maybe = v.get_shape()[i]
-    if maybe is not None:
-        return maybe
-    else:
-        return tf.shape(v)[i]
+    return maybe if maybe is not None else tf.shape(v)[i]
 
 @U.in_session
 def test_probtypes():

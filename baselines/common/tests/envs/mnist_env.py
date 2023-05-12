@@ -18,8 +18,8 @@ class MnistEnv(Env):
         # TemporaryDirecotry, but then each test that uses mnist would re-download the data
         # this way the data is not cleaned up, but we only download it once per machine
         mnist_path = osp.join(tempfile.gettempdir(), 'MNIST_data')
-        with filelock.FileLock(mnist_path + '.lock'):
-           self.mnist = input_data.read_data_sets(mnist_path)
+        with filelock.FileLock(f'{mnist_path}.lock'):
+            self.mnist = input_data.read_data_sets(mnist_path)
 
         self.np_random = np.random.RandomState()
 

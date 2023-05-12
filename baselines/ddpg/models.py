@@ -47,5 +47,4 @@ class Critic(Model):
 
     @property
     def output_vars(self):
-        output_vars = [var for var in self.trainable_vars if 'output' in var.name]
-        return output_vars
+        return [var for var in self.trainable_vars if 'output' in var.name]

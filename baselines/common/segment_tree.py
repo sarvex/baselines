@@ -39,14 +39,13 @@ class SegmentTree(object):
         mid = (node_start + node_end) // 2
         if end <= mid:
             return self._reduce_helper(start, end, 2 * node, node_start, mid)
+        if mid + 1 <= start:
+            return self._reduce_helper(start, end, 2 * node + 1, mid + 1, node_end)
         else:
-            if mid + 1 <= start:
-                return self._reduce_helper(start, end, 2 * node + 1, mid + 1, node_end)
-            else:
-                return self._operation(
-                    self._reduce_helper(start, mid, 2 * node, node_start, mid),
-                    self._reduce_helper(mid + 1, end, 2 * node + 1, mid + 1, node_end)
-                )
+            return self._operation(
+                self._reduce_helper(start, mid, 2 * node, node_start, mid),
+                self._reduce_helper(mid + 1, end, 2 * node + 1, mid + 1, node_end)
+            )
 
     def reduce(self, start=0, end=None):
         """Returns result of applying `self.operation`
@@ -124,7 +123,7 @@ class SumSegmentTree(SegmentTree):
         idx = 1
         while idx < self._capacity:  # while non-leaf
             if self._value[2 * idx] > prefixsum:
-                idx = 2 * idx
+                idx *= 2
             else:
                 prefixsum -= self._value[2 * idx]
                 idx = 2 * idx + 1

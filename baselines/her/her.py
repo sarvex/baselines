@@ -66,12 +66,14 @@ def train(*, policy, rollout_worker, evaluator,
         success_rate = mpi_average(evaluator.current_success_rate())
         if rank == 0 and success_rate >= best_success_rate and save_path:
             best_success_rate = success_rate
-            logger.info('New best success rate: {}. Saving policy to {} ...'.format(best_success_rate, best_policy_path))
+            logger.info(
+                f'New best success rate: {best_success_rate}. Saving policy to {best_policy_path} ...'
+            )
             evaluator.save_policy(best_policy_path)
             evaluator.save_policy(latest_policy_path)
         if rank == 0 and policy_save_interval > 0 and epoch % policy_save_interval == 0 and save_path:
             policy_path = periodic_policy_path.format(epoch)
-            logger.info('Saving periodic policy to {} ...'.format(policy_path))
+            logger.info(f'Saving periodic policy to {policy_path} ...')
             evaluator.save_policy(policy_path)
 
         # make sure that different threads have different seeds
@@ -171,10 +173,17 @@ def learn(*, network, env, total_timesteps,
     n_epochs = total_timesteps // n_cycles // rollout_worker.T // rollout_worker.rollout_batch_size
 
     return train(
-        save_path=save_path, policy=policy, rollout_worker=rollout_worker,
-        evaluator=evaluator, n_epochs=n_epochs, n_test_rollouts=params['n_test_rollouts'],
-        n_cycles=params['n_cycles'], n_batches=params['n_batches'],
-        policy_save_interval=policy_save_interval, demo_file=demo_file)
+        save_path=save_path,
+        policy=policy,
+        rollout_worker=rollout_worker,
+        evaluator=evaluator,
+        n_epochs=n_epochs,
+        n_test_rollouts=params['n_test_rollouts'],
+        n_cycles=n_cycles,
+        n_batches=params['n_batches'],
+        policy_save_interval=policy_save_interval,
+        demo_file=demo_file,
+    )
 
 
 @click.command()

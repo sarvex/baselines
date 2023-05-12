@@ -40,7 +40,9 @@ def build_impala_cnn(unscaled_images, depths=[16,32,32], **conv_kwargs):
         return num_str
 
     def conv_layer(out, depth):
-        return tf.layers.conv2d(out, depth, 3, padding='same', name='layer_' + get_layer_num_str())
+        return tf.layers.conv2d(
+            out, depth, 3, padding='same', name=f'layer_{get_layer_num_str()}'
+        )
 
     def residual_block(inputs):
         depth = inputs.get_shape()[-1].value
@@ -66,7 +68,9 @@ def build_impala_cnn(unscaled_images, depths=[16,32,32], **conv_kwargs):
 
     out = tf.layers.flatten(out)
     out = tf.nn.relu(out)
-    out = tf.layers.dense(out, 256, activation=tf.nn.relu, name='layer_' + get_layer_num_str())
+    out = tf.layers.dense(
+        out, 256, activation=tf.nn.relu, name=f'layer_{get_layer_num_str()}'
+    )
 
     return out
 
@@ -272,4 +276,4 @@ def get_network_builder(name):
     elif name in mapping:
         return mapping[name]
     else:
-        raise ValueError('Unknown network type: {}'.format(name))
+        raise ValueError(f'Unknown network type: {name}')

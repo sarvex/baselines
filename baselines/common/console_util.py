@@ -20,10 +20,7 @@ def fmt_item(x, l):
         x = x.item()
     if isinstance(x, (float, np.float32, np.float64)):
         v = abs(x)
-        if (v < 1e-4 or v > 1e+4) and v > 0:
-            rep = "%7.2e" % x
-        else:
-            rep = "%7.5f" % x
+        rep = "%7.2e" % x if (v < 1e-4 or v > 1e+4) and v > 0 else "%7.5f" % x
     else: rep = str(x)
     return " "*(l - len(rep)) + rep
 
@@ -40,17 +37,14 @@ color2num = dict(
 )
 
 def colorize(string, color='green', bold=False, highlight=False):
-    attr = []
     num = color2num[color]
     if highlight: num += 10
-    attr.append(str(num))
+    attr = [str(num)]
     if bold: attr.append('1')
     return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
 
 def print_cmd(cmd, dry=False):
-    if isinstance(cmd, str):  # for shell=True
-        pass
-    else:
+    if not isinstance(cmd, str):
         cmd = ' '.join(shlex.quote(arg) for arg in cmd)
     print(colorize(('CMD: ' if not dry else 'DRY: ') + cmd))
 

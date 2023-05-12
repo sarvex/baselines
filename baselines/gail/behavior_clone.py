@@ -67,7 +67,7 @@ def learn(env, policy_func, dataset, optim_batch_size=128, max_iters=1e4,
         if verbose and iter_so_far % val_per_iter == 0:
             ob_expert, ac_expert = dataset.get_next_batch(-1, 'val')
             val_loss, _ = lossandgrad(ob_expert, ac_expert, True)
-            logger.log("Training loss: {}, Validation loss: {}".format(train_loss, val_loss))
+            logger.log(f"Training loss: {train_loss}, Validation loss: {val_loss}")
 
     if ckpt_dir is None:
         savedir_fname = tempfile.TemporaryDirectory().name
@@ -78,10 +78,9 @@ def learn(env, policy_func, dataset, optim_batch_size=128, max_iters=1e4,
 
 
 def get_task_name(args):
-    task_name = 'BC'
-    task_name += '.{}'.format(args.env_id.split("-")[0])
-    task_name += '.traj_limitation_{}'.format(args.traj_limitation)
-    task_name += ".seed_{}".format(args.seed)
+    task_name = f'BC.{args.env_id.split("-")[0]}'
+    task_name += f'.traj_limitation_{args.traj_limitation}'
+    task_name += f".seed_{args.seed}"
     return task_name
 
 

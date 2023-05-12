@@ -126,10 +126,7 @@ class VecEnv(ABC):
 
     @property
     def unwrapped(self):
-        if isinstance(self, VecEnvWrapper):
-            return self.venv.unwrapped
-        else:
-            return self
+        return self.venv.unwrapped if isinstance(self, VecEnvWrapper) else self
 
     def get_viewer(self):
         if self.viewer is None:
@@ -171,7 +168,7 @@ class VecEnvWrapper(VecEnv):
 
     def __getattr__(self, name):
         if name.startswith('_'):
-            raise AttributeError("attempted to get missing private attribute '{}'".format(name))
+            raise AttributeError(f"attempted to get missing private attribute '{name}'")
         return getattr(self.venv, name)
 
 class VecEnvObservationWrapper(VecEnvWrapper):
@@ -220,4 +217,4 @@ def clear_mpi_env_vars():
     try:
         yield
     finally:
-        os.environ.update(removed_environment)
+        os.environ |= removed_environment

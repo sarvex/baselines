@@ -105,7 +105,11 @@ def test_tf_runningmeanstd():
         (np.random.randn(3,2), np.random.randn(4,2), np.random.randn(5,2)),
         ]:
 
-        rms = TfRunningMeanStd(epsilon=0.0, shape=x1.shape[1:], scope='running_mean_std' + str(np.random.randint(0, 128)))
+        rms = TfRunningMeanStd(
+            epsilon=0.0,
+            shape=x1.shape[1:],
+            scope=f'running_mean_std{str(np.random.randint(0, 128))}',
+        )
 
         x = np.concatenate([x1, x2, x3], axis=0)
         ms1 = [x.mean(axis=0), x.var(axis=0)]
@@ -143,8 +147,8 @@ def profile_tf_runningmeanstd():
 
     tic3 = time.time()
 
-    print('rms update time ({} trials): {} s'.format(n_trials, tic2 - tic1))
-    print('tfrms update time ({} trials): {} s'.format(n_trials, tic3 - tic2))
+    print(f'rms update time ({n_trials} trials): {tic2 - tic1} s')
+    print(f'tfrms update time ({n_trials} trials): {tic3 - tic2} s')
 
 
     tic1 = time.time()
@@ -159,8 +163,8 @@ def profile_tf_runningmeanstd():
 
     tic3 = time.time()
 
-    print('rms get mean time ({} trials): {} s'.format(n_trials, tic2 - tic1))
-    print('tfrms get mean time ({} trials): {} s'.format(n_trials, tic3 - tic2))
+    print(f'rms get mean time ({n_trials} trials): {tic2 - tic1} s')
+    print(f'tfrms get mean time ({n_trials} trials): {tic3 - tic2} s')
 
 
 

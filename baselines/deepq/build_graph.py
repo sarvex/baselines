@@ -125,22 +125,14 @@ def scope_name():
 
 def absolute_scope_name(relative_scope_name):
     """Appends parent scope name to `relative_scope_name`"""
-    return scope_name() + "/" + relative_scope_name
+    return f"{scope_name()}/{relative_scope_name}"
 
 
 def default_param_noise_filter(var):
     if var not in tf.trainable_variables():
         # We never perturb non-trainable vars.
         return False
-    if "fully_connected" in var.name:
-        # We perturb fully-connected layers.
-        return True
-
-    # The remaining layers are likely conv or layer norm layers, which we do not wish to
-    # perturb (in the former case because they only extract features, in the latter case because
-    # we use them for normalization purposes). If you change your network, you will likely want
-    # to re-consider which layers to perturb and which to keep untouched.
-    return False
+    return "fully_connected" in var.name
 
 
 def build_act(make_obs_ph, q_func, num_actions, scope="deepq", reuse=None):
@@ -386,11 +378,17 @@ def build_train(make_obs_ph, q_func, num_actions, optimizer, grad_norm_clipping=
 
         # q network evaluation
         q_t = q_func(obs_t_input.get(), num_actions, scope="q_func", reuse=True)  # reuse parameters from act
-        q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=tf.get_variable_scope().name + "/q_func")
+        q_func_vars = tf.get_collection(
+            tf.GraphKeys.GLOBAL_VARIABLES,
+            scope=f"{tf.get_variable_scope().name}/q_func",
+        )
 
         # target q network evalution
         q_tp1 = q_func(obs_tp1_input.get(), num_actions, scope="target_q_func")
-        target_q_func_vars = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope=tf.get_variable_scope().name + "/target_q_func")
+        target_q_func_vars = tf.get_collection(
+            tf.GraphKeys.GLOBAL_VARIABLES,
+            scope=f"{tf.get_variable_scope().name}/target_q_func",
+        )
 
         # q scores for actions which we know were selected in the given state.
         q_t_selected = tf.reduce_sum(q_t * tf.one_hot(act_t_ph, num_actions), 1)
@@ -422,11 +420,13 @@ def build_train(make_obs_ph, q_func, num_actions, optimizer, grad_norm_clipping=
         else:
             optimize_expr = optimizer.minimize(weighted_error, var_list=q_func_vars)
 
-        # update_target_fn will be called periodically to copy Q network to target Q network
-        update_target_expr = []
-        for var, var_target in zip(sorted(q_func_vars, key=lambda v: v.name),
-                                   sorted(target_q_func_vars, key=lambda v: v.name)):
-            update_target_expr.append(var_target.assign(var))
+        update_target_expr = [
+            var_target.assign(var)
+            for var, var_target in zip(
+                sorted(q_func_vars, key=lambda v: v.name),
+                sorted(target_q_func_vars, key=lambda v: v.name),
+            )
+        ]
         update_target_expr = tf.group(*update_target_expr)
 
         # Create callable functions

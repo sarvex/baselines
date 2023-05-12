@@ -135,11 +135,11 @@ def learn(network, env, seed, total_timesteps=int(40e6), gamma=0.99, log_interva
         policy_loss, value_loss, policy_entropy = model.train(obs, states, rewards, masks, actions, values)
         model.old_obs = obs
         nseconds = time.time()-tstart
-        fps = int((update*nbatch)/nseconds)
         if update % log_interval == 0 or update == 1:
             ev = explained_variance(values, rewards)
             logger.record_tabular("nupdates", update)
             logger.record_tabular("total_timesteps", update*nbatch)
+            fps = int((update*nbatch)/nseconds)
             logger.record_tabular("fps", fps)
             logger.record_tabular("policy_entropy", float(policy_entropy))
             logger.record_tabular("policy_loss", float(policy_loss))

@@ -9,7 +9,7 @@ def test_monitor():
 
     env = gym.make("CartPole-v1")
     env.seed(0)
-    mon_file = "/tmp/baselines-test-%s.monitor.csv" % uuid.uuid4()
+    mon_file = f"/tmp/baselines-test-{uuid.uuid4()}.monitor.csv"
     menv = Monitor(env, mon_file)
     menv.reset()
     for _ in range(1000):
@@ -17,15 +17,13 @@ def test_monitor():
         if done:
             menv.reset()
 
-    f = open(mon_file, 'rt')
+    with open(mon_file, 'rt') as f:
+        firstline = f.readline()
+        assert firstline.startswith('#')
+        metadata = json.loads(firstline[1:])
+        assert metadata['env_id'] == "CartPole-v1"
+        assert set(metadata.keys()) == {'env_id', 't_start'},  "Incorrect keys in monitor metadata"
 
-    firstline = f.readline()
-    assert firstline.startswith('#')
-    metadata = json.loads(firstline[1:])
-    assert metadata['env_id'] == "CartPole-v1"
-    assert set(metadata.keys()) == {'env_id', 't_start'},  "Incorrect keys in monitor metadata"
-
-    last_logline = pandas.read_csv(f, index_col=None)
-    assert set(last_logline.keys()) == {'l', 't', 'r'}, "Incorrect keys in monitor logline"
-    f.close()
+        last_logline = pandas.read_csv(f, index_col=None)
+        assert set(last_logline.keys()) == {'l', 't', 'r'}, "Incorrect keys in monitor logline"
     os.remove(mon_file)

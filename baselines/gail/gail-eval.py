@@ -26,8 +26,7 @@ CONFIG = {
 
 
 def load_dataset(expert_path):
-    dataset = Mujoco_Dset(expert_path=expert_path)
-    return dataset
+    return Mujoco_Dset(expert_path=expert_path)
 
 
 def argsparser():
@@ -44,7 +43,10 @@ def evaluate_env(env_name, seed, policy_hidden_size, stochastic, reuse, prefix):
 
     def get_checkpoint_dir(checkpoint_list, limit, prefix):
         for checkpoint in checkpoint_list:
-            if ('limitation_'+str(limit) in checkpoint) and (prefix in checkpoint):
+            if (
+                f'limitation_{str(limit)}' in checkpoint
+                and prefix in checkpoint
+            ):
                 return checkpoint
         return None
 
@@ -52,9 +54,9 @@ def evaluate_env(env_name, seed, policy_hidden_size, stochastic, reuse, prefix):
         return mlp_policy.MlpPolicy(name=name, ob_space=ob_space, ac_space=ac_space,
                                     reuse=reuse, hid_size=policy_hidden_size, num_hid_layers=2)
 
-    data_path = os.path.join('data', 'deterministic.trpo.' + env_name + '.0.00.npz')
+    data_path = os.path.join('data', f'deterministic.trpo.{env_name}.0.00.npz')
     dataset = load_dataset(data_path)
-    checkpoint_list = glob.glob(os.path.join('checkpoint', '*' + env_name + ".*"))
+    checkpoint_list = glob.glob(os.path.join('checkpoint', f'*{env_name}.*'))
     log = {
         'traj_limitation': [],
         'upper_bound': [],
@@ -67,7 +69,7 @@ def evaluate_env(env_name, seed, policy_hidden_size, stochastic, reuse, prefix):
         upper_bound = sum(dataset.rets[:limit])/limit
         checkpoint_dir = get_checkpoint_dir(checkpoint_list, limit, prefix=prefix)
         checkpoint_path = tf.train.latest_checkpoint(checkpoint_dir)
-        env = gym.make(env_name + '-v1')
+        env = gym.make(f'{env_name}-v1')
         env.seed(seed)
         print('Trajectory limitation: {}, Load checkpoint: {}, '.format(limit, checkpoint_path))
         avg_len, avg_ret = run_mujoco.runner(env,
@@ -98,13 +100,13 @@ def plot(env_name, bc_log, gail_log, stochastic):
     plt.plot(CONFIG['traj_limitation'], gail_avg_ret)
     plt.xlabel('Number of expert trajectories')
     plt.ylabel('Accumulated reward')
-    plt.title('{} unnormalized scores'.format(env_name))
+    plt.title(f'{env_name} unnormalized scores')
     plt.legend(['expert', 'bc-imitator', 'gail-imitator'], loc='lower right')
     plt.grid(b=True, which='major', color='gray', linestyle='--')
     if stochastic:
-        title_name = 'result/{}-unnormalized-stochastic-scores.png'.format(env_name)
+        title_name = f'result/{env_name}-unnormalized-stochastic-scores.png'
     else:
-        title_name = 'result/{}-unnormalized-deterministic-scores.png'.format(env_name)
+        title_name = f'result/{env_name}-unnormalized-deterministic-scores.png'
     plt.savefig(title_name)
     plt.close()
 
@@ -115,13 +117,13 @@ def plot(env_name, bc_log, gail_log, stochastic):
     plt.plot(CONFIG['traj_limitation'], gail_normalized_ret)
     plt.xlabel('Number of expert trajectories')
     plt.ylabel('Normalized performance')
-    plt.title('{} normalized scores'.format(env_name))
+    plt.title(f'{env_name} normalized scores')
     plt.legend(['expert', 'bc-imitator', 'gail-imitator'], loc='lower right')
     plt.grid(b=True, which='major', color='gray', linestyle='--')
     if stochastic:
-        title_name = 'result/{}-normalized-stochastic-scores.png'.format(env_name)
+        title_name = f'result/{env_name}-normalized-stochastic-scores.png'
     else:
-        title_name = 'result/{}-normalized-deterministic-scores.png'.format(env_name)
+        title_name = f'result/{env_name}-normalized-deterministic-scores.png'
     plt.ylim(0, 1.6)
     plt.savefig(title_name)
     plt.close()
@@ -130,14 +132,14 @@ def plot(env_name, bc_log, gail_log, stochastic):
 def main(args):
     U.make_session(num_cpu=1).__enter__()
     set_global_seeds(args.seed)
-    print('Evaluating {}'.format(args.env))
+    print(f'Evaluating {args.env}')
     bc_log = evaluate_env(args.env, args.seed, args.policy_hidden_size,
                           args.stochastic_policy, False, 'BC')
-    print('Evaluation for {}'.format(args.env))
+    print(f'Evaluation for {args.env}')
     print(bc_log)
     gail_log = evaluate_env(args.env, args.seed, args.policy_hidden_size,
                             args.stochastic_policy, True, 'gail')
-    print('Evaluation for {}'.format(args.env))
+    print(f'Evaluation for {args.env}')
     print(gail_log)
     plot(args.env, bc_log, gail_log, args.stochastic_policy)
 

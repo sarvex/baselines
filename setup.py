@@ -3,8 +3,9 @@ from setuptools import setup, find_packages
 import sys
 
 if sys.version_info.major != 3:
-    print('This Python is only compatible with Python 3, but you are running '
-          'Python {}. The installation will likely fail.'.format(sys.version_info.major))
+    print(
+        f'This Python is only compatible with Python 3, but you are running Python {sys.version_info.major}. The installation will likely fail.'
+    )
 
 
 extras = {
@@ -22,8 +23,8 @@ extras = {
 }
 
 all_deps = []
-for group_name in extras:
-    all_deps += extras[group_name]
+for value in extras.values():
+    all_deps += value
 
 extras['all'] = all_deps
 
